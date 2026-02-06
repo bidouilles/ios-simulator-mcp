@@ -190,6 +190,46 @@ Screenshots are automatically optimized to reduce context usage:
 - `format=png`: Need pixel-perfect accuracy, OCR on text
 - `scale=0.25`: Quick state checks, thumbnails
 
+## Dart MCP Integration
+
+The `discover_dtd_uris` tool helps discover running Dart Tooling Daemon (DTD) URIs on the local machine. These URIs are needed by the Dart MCP server for Flutter debugging features like hot reload, widget inspection, and runtime error reporting.
+
+### Usage
+
+```
+discover_dtd_uris timeout=3.0
+```
+
+**Output example:**
+```
+Found running Dart VM services:
+
+- ws://127.0.0.1:49778/BACzVeYQggg=/ws
+  Process: /path/to/dart
+  VM: Dart VM
+```
+
+### How it works
+
+The tool discovers DTD URIs by:
+1. Scanning running `dart`/`flutter` processes for VM service URIs in command line arguments
+2. Checking Flutter tool state files
+3. Probing dart processes with listening TCP ports
+4. Searching macOS system logs for recent VM service URIs
+
+### Integration with Dart MCP Server
+
+Pass the discovered URI to the Dart MCP server's `connect_dart_tooling_daemon` tool:
+```
+connect_dart_tooling_daemon uri="ws://127.0.0.1:49778/BACzVeYQggg=/ws"
+```
+
+This enables:
+- `hot_reload` - Apply code changes without losing app state
+- `hot_restart` - Full restart with code changes
+- `get_widget_tree` - Inspect Flutter widget hierarchy
+- `get_runtime_errors` - See errors from running app
+
 ## Tips for AI Assistants
 
 1. **Always call `start_bridge` first** before any UI automation
@@ -201,6 +241,7 @@ Screenshots are automatically optimized to reduce context usage:
 7. **Use `scale=1.0`** only when you need to read small text
 8. **Screenshots saved to** `/tmp/ios-simulator-mcp/screenshots/`
 9. **Use `set_status_bar`** for consistent screenshots (time="9:41", battery_level=100)
+10. **Use `discover_dtd_uris`** to find DTD URIs for Dart MCP integration
 
 ## Dependencies
 

@@ -191,6 +191,63 @@ Add to `~/.claude/settings.json` or project `.claude/settings.json`:
 | `dismiss_alert` | Dismiss alert dialog |
 | `get_alert_text` | Get alert text |
 
+### Dart MCP Integration
+
+| Tool | Description |
+|------|-------------|
+| `discover_dtd_uris` | Discover running Dart Tooling Daemon (DTD) URIs for Flutter debugging |
+
+## Flutter Development
+
+For Flutter app development, you can use this iOS Simulator MCP server alongside the **Dart MCP server** for a complete development experience. The Dart MCP server provides Flutter-specific features like hot reload, widget inspection, and runtime error reporting.
+
+### Setup Dart MCP Server
+
+```bash
+# Add Dart MCP server to Claude Code
+claude mcp add --transport stdio dart -- dart mcp-server
+```
+
+### Using Both Servers Together
+
+1. **iOS Simulator MCP**: UI automation, screenshots, taps, swipes
+2. **Dart MCP**: Hot reload, widget tree, runtime errors, code analysis
+
+### Discover DTD URI
+
+The `discover_dtd_uris` tool finds running Dart VM service URIs on your machine. These URIs are needed by the Dart MCP server to connect to your Flutter app:
+
+```
+# In iOS Simulator MCP
+discover_dtd_uris
+
+# Output:
+# Found running Dart VM services:
+# - ws://127.0.0.1:49778/BACzVeYQggg=/ws
+#   Process: dart
+#   VM: Dart VM
+```
+
+Then use this URI with the Dart MCP server:
+```
+# In Dart MCP
+connect_dart_tooling_daemon uri="ws://127.0.0.1:49778/BACzVeYQggg=/ws"
+```
+
+### Flutter Workflow Example
+
+```
+1. Start your Flutter app: flutter run
+2. discover_dtd_uris                        → Find DTD URI
+3. connect_dart_tooling_daemon uri="..."    → Connect Dart MCP (in Dart MCP server)
+4. start_bridge device_id="..."             → Connect iOS Simulator MCP
+5. get_screenshot device_id="..."           → Capture current state
+6. get_widget_tree                          → Inspect Flutter widgets (Dart MCP)
+7. Make code changes
+8. hot_reload                               → Apply changes instantly (Dart MCP)
+9. get_screenshot device_id="..."           → Verify changes
+```
+
 ## Usage Examples
 
 ### Basic Workflow

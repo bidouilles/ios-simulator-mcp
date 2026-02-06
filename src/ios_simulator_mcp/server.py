@@ -92,6 +92,218 @@ def save_screenshot(data: bytes, prefix: str = "screenshot") -> str:
     return str(filepath)
 
 
+async def discover_dart_vm_services(timeout: float = 2.0) -> list[dict[str, Any]]:
+    """
+    Discover running Dart VM services (DTD URIs) on the local machine.
+
+    The DTD URI is the WebSocket URI used by the Dart Tooling Daemon, which enables
+    features like hot reload, widget inspection, and runtime error reporting.
+
+    Returns a list of dicts with:
+    - dtd_uri: The WebSocket URI for the DTD (e.g., ws://127.0.0.1:PORT/TOKEN=/ws)
+    - http_uri: The HTTP URI (e.g., http://127.0.0.1:PORT/TOKEN=/)
+    - process: Process info if available
+    - vm_name: VM name if available
+    """
+    import subprocess
+    import httpx
+    import re
+    import glob
+
+    discovered = []
+    seen_uris: set[str] = set()
+
+    def add_uri(dtd_uri: str, http_uri: str = "", process: str = "", vm_name: str = ""):
+        """Add a URI if not already seen."""
+        if dtd_uri in seen_uris:
+            return
+        seen_uris.add(dtd_uri)
+        discovered.append({
+            "dtd_uri": dtd_uri,
+            "http_uri": http_uri or dtd_uri.replace("ws://", "http://").replace("/ws", "/"),
+            "process": process,
+            "vm_name": vm_name or "Dart VM",
+        })
+
+    # Step 1: Look for VM service URIs in process command lines
+    # This is the most reliable way to get the full URI with auth token
+    try:
+        # Use ps to get all process command lines
+        result = subprocess.run(
+            ["ps", "aux"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+
+        # Pattern to match Dart VM service URIs
+        # Format: http://127.0.0.1:PORT/TOKEN=/ or ws://127.0.0.1:PORT/TOKEN=/ws
+        uri_pattern = re.compile(
+            r'((?:ws|http)s?://(?:127\.0\.0\.1|localhost):\d+/[A-Za-z0-9+/]+=*/?)(?:ws)?'
+        )
+
+        for line in result.stdout.split("\n"):
+            lower_line = line.lower()
+            if "dart" in lower_line or "flutter" in lower_line:
+                # Extract URI from the command line
+                matches = uri_pattern.findall(line)
+                for match in matches:
+                    # Normalize to HTTP URI first
+                    http_uri = match.replace("ws://", "http://").replace("wss://", "https://")
+                    http_uri = http_uri.rstrip("/")
+                    if http_uri.endswith("/ws"):
+                        http_uri = http_uri[:-3]
+                    if not http_uri.endswith("="):
+                        http_uri += "="
+                    http_uri += "/"
+
+                    # Create WebSocket URI
+                    ws_uri = http_uri.replace("http://", "ws://").replace("https://", "wss://")
+                    ws_uri = ws_uri.rstrip("/") + "/ws"
+
+                    # Extract process name
+                    parts = line.split()
+                    process_name = parts[10] if len(parts) > 10 else "dart"
+
+                    add_uri(ws_uri, http_uri, process_name)
+    except Exception as e:
+        logger.debug(f"Error scanning processes: {e}")
+
+    # Step 2: Check Flutter tool state files
+    try:
+        flutter_state_patterns = [
+            str(Path.home() / ".flutter_tool_state"),
+            "/tmp/flutter_tools.*",
+        ]
+
+        for pattern in flutter_state_patterns:
+            for state_dir in glob.glob(pattern):
+                if os.path.isdir(state_dir):
+                    # Look for files that might contain VM service URIs
+                    for filename in os.listdir(state_dir):
+                        filepath = os.path.join(state_dir, filename)
+                        if os.path.isfile(filepath):
+                            try:
+                                with open(filepath) as f:
+                                    content = f.read()
+                                    # Look for URIs in the file
+                                    uri_pattern = re.compile(
+                                        r'((?:ws|http)s?://(?:127\.0\.0\.1|localhost):\d+/[A-Za-z0-9+/]+=*/?)(?:ws)?'
+                                    )
+                                    matches = uri_pattern.findall(content)
+                                    for match in matches:
+                                        # Normalize to HTTP URI first
+                                        http_uri = match.replace("ws://", "http://").replace("wss://", "https://")
+                                        http_uri = http_uri.rstrip("/")
+                                        if http_uri.endswith("/ws"):
+                                            http_uri = http_uri[:-3]
+                                        if not http_uri.endswith("="):
+                                            http_uri += "="
+                                        http_uri += "/"
+
+                                        # Create WebSocket URI
+                                        ws_uri = http_uri.replace("http://", "ws://").replace("https://", "wss://")
+                                        ws_uri = ws_uri.rstrip("/") + "/ws"
+
+                                        add_uri(ws_uri, http_uri, "flutter (from state file)")
+                            except Exception:
+                                pass
+    except Exception as e:
+        logger.debug(f"Error checking Flutter state files: {e}")
+
+    # Step 3: Find dart processes with listening ports and probe them
+    try:
+        result = subprocess.run(
+            ["lsof", "-iTCP", "-sTCP:LISTEN", "-n", "-P"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+
+        candidate_ports: list[tuple[int, str]] = []
+
+        for line in result.stdout.split("\n"):
+            lower_line = line.lower()
+            if "dart" in lower_line or "flutter" in lower_line:
+                match = re.search(r":(\d+)\s*$", line)
+                if match:
+                    port = int(match.group(1))
+                    parts = line.split()
+                    process_name = parts[0] if parts else "unknown"
+                    candidate_ports.append((port, process_name))
+
+        # Probe each candidate port
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            for port, process_name in candidate_ports:
+                # Skip if we already found URIs for this port
+                if any(str(port) in uri for uri in seen_uris):
+                    continue
+
+                try:
+                    # Try to access the VM service without auth token
+                    # Some endpoints might respond
+                    base_url = f"http://127.0.0.1:{port}"
+
+                    # Try getVM endpoint
+                    response = await client.get(f"{base_url}/getVM", timeout=timeout)
+                    if response.status_code == 200:
+                        data = response.json()
+                        vm_name = data.get("result", {}).get("name", "Dart VM")
+
+                        # Note: Without auth token, this might not be the full URI
+                        # but we report it as a partial match
+                        ws_uri = f"ws://127.0.0.1:{port}/ws"
+                        add_uri(
+                            ws_uri,
+                            base_url,
+                            process_name,
+                            f"{vm_name} (auth token may be required)",
+                        )
+                except Exception:
+                    pass
+    except Exception as e:
+        logger.debug(f"Error probing ports: {e}")
+
+    # Step 4: Check macOS Console logs for recent VM service URIs
+    try:
+        # Look for recent log entries with VM service URIs
+        result = subprocess.run(
+            [
+                "log", "show",
+                "--predicate", 'processImagePath CONTAINS "dart" OR processImagePath CONTAINS "flutter"',
+                "--last", "5m",
+                "--style", "compact",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+
+        uri_pattern = re.compile(
+            r'((?:ws|http)s?://(?:127\.0\.0\.1|localhost):\d+/[A-Za-z0-9+/]+=*/?)(?:ws)?'
+        )
+        matches = uri_pattern.findall(result.stdout)
+        for match in matches:
+            # Normalize to HTTP URI first
+            http_uri = match.replace("ws://", "http://").replace("wss://", "https://")
+            http_uri = http_uri.rstrip("/")
+            if http_uri.endswith("/ws"):
+                http_uri = http_uri[:-3]
+            if not http_uri.endswith("="):
+                http_uri += "="
+            http_uri += "/"
+
+            # Create WebSocket URI
+            ws_uri = http_uri.replace("http://", "ws://").replace("https://", "wss://")
+            ws_uri = ws_uri.rstrip("/") + "/ws"
+
+            add_uri(ws_uri, http_uri, "flutter (from system logs)")
+    except Exception as e:
+        logger.debug(f"Error checking system logs: {e}")
+
+    return discovered
+
+
 # Create the MCP server
 server = Server("ios-simulator-mcp")
 
@@ -669,6 +881,22 @@ TOOLS = [
             "required": ["device_id"],
         },
     ),
+    Tool(
+        name="discover_dtd_uris",
+        description="Discover running Dart Tooling Daemon (DTD) URIs on the local machine. "
+                    "These URIs can be used with the Dart MCP server's connect_dart_tooling_daemon tool "
+                    "for hot reload, widget inspection, and other Flutter debugging features.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "timeout": {
+                    "type": "number",
+                    "description": "Timeout in seconds for probing each port (default: 2.0)",
+                },
+            },
+            "required": [],
+        },
+    ),
 ]
 
 
@@ -1161,6 +1389,34 @@ async def handle_tool(name: str, args: dict[str, Any]) -> str:
         await simulator_manager.status_bar_clear(device_id)
         return "Status bar overrides cleared"
 
+    # === DTD Discovery ===
+
+    elif name == "discover_dtd_uris":
+        timeout = args.get("timeout", 2.0)
+        uris = await discover_dart_vm_services(timeout=timeout)
+
+        if not uris:
+            return (
+                "No running Dart VM services found.\n\n"
+                "To get a DTD URI:\n"
+                "1. Run a Flutter app in debug mode: flutter run\n"
+                "2. The DTD URI is printed when the app starts (looks like ws://127.0.0.1:XXXXX/...)\n"
+                "3. In VS Code, use 'Dart: Copy DTD Uri to Clipboard' command\n"
+                "4. In Android Studio, check the Debug console for the VM service URI"
+            )
+
+        result = ["Found running Dart VM services:\n"]
+        for uri_info in uris:
+            result.append(f"- {uri_info['dtd_uri']}")
+            if uri_info.get("process"):
+                result.append(f"  Process: {uri_info['process']}")
+            if uri_info.get("vm_name"):
+                result.append(f"  VM: {uri_info['vm_name']}")
+            result.append("")
+
+        result.append("\nUse one of these URIs with the Dart MCP server's connect_dart_tooling_daemon tool.")
+        return "\n".join(result)
+
     # === Clipboard ===
 
     elif name == "get_clipboard":
@@ -1323,6 +1579,14 @@ API_REFERENCE = """# iOS Simulator MCP API Reference
 | get_clipboard | Get clipboard content |
 | set_clipboard | Set clipboard content |
 | get_window_size | Get screen dimensions |
+| set_status_bar | Override status bar appearance |
+| clear_status_bar | Clear status bar overrides |
+
+## Dart MCP Integration
+
+| Tool | Description |
+|------|-------------|
+| discover_dtd_uris | Discover running Dart Tooling Daemon URIs for Flutter debugging |
 
 ## Alerts
 
