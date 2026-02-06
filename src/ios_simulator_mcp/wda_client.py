@@ -710,21 +710,22 @@ class WDAClient:
         Args:
             appearance: 'dark' or 'light'
         """
-        session_id = await self._ensure_session()
+        # This endpoint is session-less (.withoutSession in WDA)
         await self._request(
             "POST",
-            f"/session/{session_id}/wda/device/appearance",
+            "/wda/device/appearance",
             json={"name": appearance},
         )
 
     async def get_appearance(self) -> str:
         """Get current device appearance."""
-        session_id = await self._ensure_session()
+        # Get appearance from device info (session-less endpoint)
         data = await self._request(
             "GET",
-            f"/session/{session_id}/wda/device/appearance",
+            "/wda/device/info",
         )
-        return data.get("value", "unknown")
+        value = data.get("value", {})
+        return value.get("userInterfaceStyle", "unknown")
 
     # === Biometrics (Touch ID / Face ID) ===
 
