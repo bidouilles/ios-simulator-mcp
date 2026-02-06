@@ -41,9 +41,9 @@ claude mcp add ios-simulator -e WDA_HOST=192.168.1.30 -- /path/to/ios-simulator-
 
 ## Compatibility & Versioning
 
-- FastMCP is pinned in `pyproject.toml` (`fastmcp==2.14.5`) to reduce breakage from upstream API changes.
+- FastMCP is pinned in `pyproject.toml` (`fastmcp==2.14.4`) to reduce breakage from upstream API changes.
 - For upgrades, bump deliberately and run:
-  - `ruff check src/ios_simulator_mcp/server.py tests`
+  - `ruff check .`
   - `python -m compileall -q src`
   - `PYTHONPATH=src pytest -q`
 

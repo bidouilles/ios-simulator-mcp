@@ -15,7 +15,7 @@ import sys
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Iterator, Literal
 
 from fastmcp import FastMCP
 from pydantic import Field
@@ -133,6 +133,17 @@ def _wrap_tool_with_tracking(tool_name: str, original_fn):
     return tracked_fn
 
 
+def _iter_named_tools(tools: Any) -> Iterator[tuple[str, Any]]:
+    """Yield (name, tool) pairs from FastMCP tool collections across versions."""
+    if isinstance(tools, dict):
+        yield from tools.items()
+        return
+
+    for idx, tool in enumerate(tools):
+        name = getattr(tool, "name", f"tool_{idx}")
+        yield name, tool
+
+
 @asynccontextmanager
 async def lifespan(mcp: FastMCP):
     """Manage dashboard server lifecycle."""
@@ -150,7 +161,7 @@ async def lifespan(mcp: FastMCP):
     # This makes MCP protocol calls appear in the dashboard
     tools = await mcp.get_tools()
     wrapped_count = 0
-    for tool_name, tool in tools.items():
+    for tool_name, tool in _iter_named_tools(tools):
         if tool_name in _dashboard_wrapped_tools:
             continue
 

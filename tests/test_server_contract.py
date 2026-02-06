@@ -12,6 +12,10 @@ def test_server_compat_export_points_to_mcp() -> None:
 
 def test_fastmcp_tools_registered() -> None:
     tools = asyncio.run(server_module.mcp.get_tools())
+    if isinstance(tools, dict):
+        tool_names = set(tools.keys())
+    else:
+        tool_names = {tool.name for tool in tools}
 
     expected_tools = {
         "list_devices",
@@ -20,7 +24,7 @@ def test_fastmcp_tools_registered() -> None:
         "tap",
         "discover_dtd_uris",
     }
-    assert expected_tools.issubset(tools.keys())
+    assert expected_tools.issubset(tool_names)
 
     start_bridge_tool = asyncio.run(server_module.mcp.get_tool("start_bridge"))
     assert start_bridge_tool.name == "start_bridge"
@@ -29,5 +33,10 @@ def test_fastmcp_tools_registered() -> None:
 
 def test_fastmcp_resources_registered() -> None:
     resources = asyncio.run(server_module.mcp.get_resources())
-    assert "ios-sim://api-reference" in resources
-    assert "ios-sim://automation-guide" in resources
+    if isinstance(resources, dict):
+        resource_keys = set(resources.keys())
+    else:
+        resource_keys = {resource.key for resource in resources}
+
+    assert "ios-sim://api-reference" in resource_keys
+    assert "ios-sim://automation-guide" in resource_keys
