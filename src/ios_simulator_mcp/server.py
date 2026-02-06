@@ -109,6 +109,25 @@ def _complete_tool_call(tool_call, result: str | None = None, error: str | None 
 # === Lifespan for Dashboard ===
 
 
+def _wrap_tool_with_tracking(tool_name: str, original_fn):
+    """Wrap a tool function to track calls in the dashboard."""
+    import functools
+
+    @functools.wraps(original_fn)
+    async def tracked_fn(*args, **kwargs):
+        # Track the call
+        tool_call = _track_tool_call(tool_name, kwargs)
+        try:
+            result = await original_fn(*args, **kwargs)
+            _complete_tool_call(tool_call, result=result)
+            return result
+        except Exception as e:
+            _complete_tool_call(tool_call, error=str(e))
+            raise
+
+    return tracked_fn
+
+
 @asynccontextmanager
 async def lifespan(mcp: FastMCP):
     """Manage dashboard server lifecycle."""
@@ -121,22 +140,21 @@ async def lifespan(mcp: FastMCP):
     logger.info(f"Log level: {LOG_LEVEL}")
     logger.info("=" * 60)
 
+    # Wrap all registered tools with dashboard tracking
+    # This makes MCP protocol calls appear in the dashboard
+    for tool_name, tool in mcp._tool_manager._tools.items():
+        original_fn = tool.fn
+        tool.fn = _wrap_tool_with_tracking(tool_name, original_fn)
+    logger.info(f"Wrapped {len(mcp._tool_manager._tools)} tools with dashboard tracking")
+
     # Wire up tool executor for dashboard quick actions
     async def execute_tool_from_dashboard(name: str, args: dict[str, Any]) -> str:
         """Execute a tool from dashboard quick actions."""
-        tool_call = _track_tool_call(name, args)
-        try:
-            # Get tool from the FastMCP tool manager and call its function
-            # Functions use Annotated[type, Field(...)] so they're directly callable
-            tool = mcp._tool_manager._tools.get(name)
-            if not tool:
-                raise ValueError(f"Unknown tool: {name}")
-            result = await tool.fn(**args)
-            _complete_tool_call(tool_call, result=result)
-            return result
-        except Exception as e:
-            _complete_tool_call(tool_call, error=str(e))
-            raise
+        # Tools are already wrapped, so just call them directly
+        tool = mcp._tool_manager._tools.get(name)
+        if not tool:
+            raise ValueError(f"Unknown tool: {name}")
+        return await tool.fn(**args)
 
     dashboard_state.tool_executor = execute_tool_from_dashboard
 
@@ -1173,6 +1191,12 @@ def get_api_reference() -> str:
 def get_automation_guide() -> str:
     """iOS Simulator Automation Guide - Guide for automating iOS simulators."""
     return AUTOMATION_GUIDE
+
+
+# Backward-compatible exports for existing imports:
+# `from ios_simulator_mcp.server import server, TOOLS`
+server = mcp
+TOOLS = list(mcp._tool_manager._tools.values())
 
 
 # === Main Entry Point ===
