@@ -492,14 +492,17 @@ Use `reset_session` to create a fresh WDA session.
 
 ## Web Dashboard
 
-The MCP server includes a real-time web dashboard that shows all tool calls, device status, and screenshots.
+The MCP server includes a real-time web dashboard for monitoring and interacting with simulators.
+
+![Dashboard Screenshot](docs/dashboard-screenshot.png)
 
 **Features:**
 - Real-time tool call monitoring via WebSocket
-- Device info display
-- Last screenshot preview
-- Recording status indicator
-- Success rate and timing statistics
+- Live screenshot preview with click-to-tap support
+- Quick actions: Connect, Capture, Home, UI Tree, Record, Apps
+- Swipe controls and text input
+- Sequence recording and playback
+- Keyboard shortcuts: `S` (screenshot), `H` (home), `R` (record), `U` (UI tree), `T` (text)
 
 **Access:** Opens automatically at `http://localhost:8200` when the server starts.
 
