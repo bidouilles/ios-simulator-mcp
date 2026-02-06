@@ -53,7 +53,7 @@ claude mcp add ios-simulator -e WDA_HOST=192.168.1.30 -- /path/to/ios-simulator-
 - **macOS** with Xcode installed
 - **Xcode Command Line Tools**: `xcode-select --install`
 - **Python 3.10+**
-- **WebDriverAgent** (included in `../WebDriverAgent`)
+- **WebDriverAgent**: Clone from https://github.com/appium/WebDriverAgent into `../WebDriverAgent`
 
 ## Detailed Setup
 
