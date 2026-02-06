@@ -62,7 +62,11 @@ WDA_HOST = os.environ.get("WDA_HOST", "127.0.0.1")
 # === Helper Functions ===
 
 
-def get_wda_client(device_id: str, port: int = DEFAULT_WDA_PORT, host: str | None = None) -> WDAClient:
+def get_wda_client(
+    device_id: str,
+    port: int = DEFAULT_WDA_PORT,
+    host: str | None = None,
+) -> WDAClient:
     """Get or create a WDA client for a device."""
     actual_host = host or WDA_HOST
     key = f"{device_id}:{actual_host}:{port}"
@@ -264,7 +268,10 @@ async def start_bridge(
                 "wda_host": f"{actual_host}:{port}",
             })
 
-        return f"WebDriverAgent is running at {actual_host}:{port}. Session created (ID: {client.session_id})."
+        return (
+            f"WebDriverAgent is running at {actual_host}:{port}. "
+            f"Session created (ID: {client.session_id})."
+        )
     else:
         return (
             f"WebDriverAgent is not responding at {actual_host}:{port}.\n\n"
@@ -288,7 +295,7 @@ async def get_screenshot(
     format: Annotated[Literal["png", "jpeg"], Field(description="Image format")] = "jpeg",
     quality: Annotated[int, Field(ge=1, le=100, description="JPEG quality 1-100")] = 85,
 ) -> str:
-    """Capture a screenshot from the simulator. Returns file path. Supports resizing and format options."""
+    """Capture a screenshot from the simulator with resizing and format options."""
     from PIL import Image
 
     ensure_screenshot_dir()
@@ -398,7 +405,10 @@ async def tap(
             return f"No element found matching predicate: {predicate}"
 
         await client.tap(elem.center_x, elem.center_y)
-        return f"Tapped element [{elem.index}] {elem.element_type} at ({elem.center_x}, {elem.center_y})"
+        return (
+            f"Tapped element [{elem.index}] {elem.element_type} "
+            f"at ({elem.center_x}, {elem.center_y})"
+        )
 
     elif x is not None and y is not None:
         await client.tap(x, y)
@@ -447,7 +457,10 @@ async def swipe(
     to_x: Annotated[int | None, Field(description="Ending X coordinate")] = None,
     to_y: Annotated[int | None, Field(description="Ending Y coordinate")] = None,
     duration_ms: Annotated[int, Field(description="Duration in milliseconds")] = 300,
-    direction: Annotated[Literal["up", "down", "left", "right"] | None, Field(description="Swipe direction")] = None,
+    direction: Annotated[
+        Literal["up", "down", "left", "right"] | None,
+        Field(description="Swipe direction"),
+    ] = None,
 ) -> str:
     """Perform a swipe gesture."""
     client = get_wda_client(device_id)
@@ -549,7 +562,10 @@ async def open_url(
 @mcp.tool
 async def press_button(
     device_id: Annotated[str, Field(description="Simulator UDID")],
-    button: Annotated[Literal["home", "volumeUp", "volumeDown"], Field(description="Button to press")],
+    button: Annotated[
+        Literal["home", "volumeUp", "volumeDown"],
+        Field(description="Button to press"),
+    ],
 ) -> str:
     """Press a hardware button (home, volumeUp, volumeDown)."""
     client = get_wda_client(device_id)
@@ -681,18 +697,43 @@ async def reset_session(device_id: Annotated[str, Field(description="Simulator U
 async def set_status_bar(
     device_id: Annotated[str, Field(description="Simulator UDID")],
     time: Annotated[str | None, Field(description="Time string (e.g., '9:41')")] = None,
-    battery_level: Annotated[int | None, Field(ge=0, le=100, description="Battery level 0-100")] = None,
-    battery_state: Annotated[Literal["charging", "charged", "discharging"] | None, Field(description="Battery state")] = None,
-    data_network: Annotated[Literal["hide", "wifi", "3g", "4g", "lte", "lte-a", "lte+", "5g", "5g+", "5g-uwb", "5g-uc"] | None, Field(description="Data network type")] = None,
-    wifi_mode: Annotated[Literal["searching", "failed", "active"] | None, Field(description="WiFi mode")] = None,
+    battery_level: Annotated[
+        int | None,
+        Field(ge=0, le=100, description="Battery level 0-100"),
+    ] = None,
+    battery_state: Annotated[
+        Literal["charging", "charged", "discharging"] | None,
+        Field(description="Battery state"),
+    ] = None,
+    data_network: Annotated[
+        Literal["hide", "wifi", "3g", "4g", "lte", "lte-a", "lte+", "5g", "5g+", "5g-uwb", "5g-uc"]
+        | None,
+        Field(description="Data network type"),
+    ] = None,
+    wifi_mode: Annotated[
+        Literal["searching", "failed", "active"] | None,
+        Field(description="WiFi mode"),
+    ] = None,
     wifi_bars: Annotated[int | None, Field(ge=0, le=3, description="WiFi signal bars 0-3")] = None,
-    cellular_mode: Annotated[Literal["notSupported", "searching", "failed", "active"] | None, Field(description="Cellular mode")] = None,
+    cellular_mode: Annotated[
+        Literal["notSupported", "searching", "failed", "active"] | None,
+        Field(description="Cellular mode"),
+    ] = None,
     cellular_bars: Annotated[int | None, Field(ge=0, le=4, description="Cellular bars 0-4")] = None,
     operator_name: Annotated[str | None, Field(description="Carrier name (empty to hide)")] = None,
 ) -> str:
-    """Override status bar appearance (time, battery, network). Useful for consistent screenshots."""
-    overrides = [time, battery_level, battery_state, data_network,
-                 wifi_mode, wifi_bars, cellular_mode, cellular_bars, operator_name]
+    """Override status bar appearance for consistent screenshots."""
+    overrides = [
+        time,
+        battery_level,
+        battery_state,
+        data_network,
+        wifi_mode,
+        wifi_bars,
+        cellular_mode,
+        cellular_bars,
+        operator_name,
+    ]
     if all(v is None for v in overrides):
         raise ValueError("At least one status bar override must be specified")
 
@@ -778,7 +819,10 @@ async def get_appearance(device_id: Annotated[str, Field(description="Simulator 
 @mcp.tool
 async def simulate_biometrics(
     device_id: Annotated[str, Field(description="Simulator UDID")],
-    match: Annotated[bool, Field(description="True for successful authentication, False for failure")] = True,
+    match: Annotated[
+        bool,
+        Field(description="True for successful authentication, False for failure"),
+    ] = True,
 ) -> str:
     """Simulate Touch ID or Face ID authentication (success or failure)."""
     client = get_wda_client(device_id)
@@ -838,7 +882,10 @@ async def pinch(
     x: Annotated[int, Field(description="Center X coordinate for pinch")],
     y: Annotated[int, Field(description="Center Y coordinate for pinch")],
     scale: Annotated[float, Field(description="Scale factor: <1.0 to zoom out, >1.0 to zoom in")],
-    velocity: Annotated[float, Field(description="Pinch velocity in scale factor per second")] = 1.0,
+    velocity: Annotated[
+        float,
+        Field(description="Pinch velocity in scale factor per second"),
+    ] = 1.0,
 ) -> str:
     """Perform a pinch gesture (zoom in/out) at coordinates."""
     client = get_wda_client(device_id)
@@ -928,7 +975,10 @@ async def discover_dtd_uris(
                                     )
                                     matches = uri_pattern.findall(content)
                                     for match in matches:
-                                        http_uri = match.replace("ws://", "http://").replace("wss://", "https://")
+                                        http_uri = match.replace("ws://", "http://").replace(
+                                            "wss://",
+                                            "https://",
+                                        )
                                         http_uri = http_uri.rstrip("/")
                                         if http_uri.endswith("/ws"):
                                             http_uri = http_uri[:-3]
@@ -936,7 +986,10 @@ async def discover_dtd_uris(
                                             http_uri += "="
                                         http_uri += "/"
 
-                                        ws_uri = http_uri.replace("http://", "ws://").replace("https://", "wss://")
+                                        ws_uri = http_uri.replace("http://", "ws://").replace(
+                                            "https://",
+                                            "wss://",
+                                        )
                                         ws_uri = ws_uri.rstrip("/") + "/ws"
                                         add_uri(ws_uri, http_uri, "flutter (from state file)")
                             except Exception:
@@ -975,7 +1028,12 @@ async def discover_dtd_uris(
                         data = response.json()
                         vm_name = data.get("result", {}).get("name", "Dart VM")
                         ws_uri = f"ws://127.0.0.1:{port}/ws"
-                        add_uri(ws_uri, base_url, process_name, f"{vm_name} (auth token may be required)")
+                        add_uri(
+                            ws_uri,
+                            base_url,
+                            process_name,
+                            f"{vm_name} (auth token may be required)",
+                        )
                 except Exception:
                     pass
     except Exception as e:
@@ -986,7 +1044,8 @@ async def discover_dtd_uris(
         result = subprocess.run(
             [
                 "log", "show",
-                "--predicate", 'processImagePath CONTAINS "dart" OR processImagePath CONTAINS "flutter"',
+                "--predicate",
+                'processImagePath CONTAINS "dart" OR processImagePath CONTAINS "flutter"',
                 "--last", "5m",
                 "--style", "compact",
             ],
@@ -1031,7 +1090,10 @@ async def discover_dtd_uris(
             result_lines.append(f"  VM: {uri_info['vm_name']}")
         result_lines.append("")
 
-    result_lines.append("\nUse one of these URIs with the Dart MCP server's connect_dart_tooling_daemon tool.")
+    result_lines.append(
+        "\nUse one of these URIs with the Dart MCP server's "
+        "connect_dart_tooling_daemon tool."
+    )
     return "\n".join(result_lines)
 
 

@@ -45,5 +45,8 @@ htmlcov/
 # Logs
 *.log
 
+# Generated docs
+docs/llms-full.txt
+
 # Screenshots (generated at runtime)
 /tmp/ios-simulator-mcp/
