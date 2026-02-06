@@ -1,0 +1,201 @@
+# CLAUDE.md - ios-simulator-mcp
+
+This file provides context for AI assistants working on this project.
+
+## Project Overview
+
+**ios-simulator-mcp** - MCP server for iOS Simulator automation via WebDriverAgent. Control simulators from Claude, Cursor, and other AI assistants. Tap, type, swipe, screenshot, launch apps, and more.
+
+This Python MCP server enables AI assistants to automate iOS Simulators via WebDriverAgent (WDA). It provides tools for UI automation, screenshots, app control, and system interactions.
+
+## Architecture
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   MCP Client    │────▶│   MCP Server    │────▶│ WebDriverAgent  │
+│ (Claude, etc.)  │     │  (Python/stdio) │     │  (on Simulator) │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                               │
+                               ▼
+                        ┌─────────────────┐
+                        │  xcrun simctl   │
+                        │ (device mgmt)   │
+                        └─────────────────┘
+```
+
+### Key Components
+
+- **`server.py`**: MCP server entry point, tool definitions and handlers
+- **`wda_client.py`**: HTTP client for WebDriverAgent API (W3C WebDriver + WDA extensions)
+- **`simulator.py`**: iOS Simulator management via `xcrun simctl`
+- **`ui_tree.py`**: Parses WDA accessibility hierarchy into usable format
+
+## WebDriverAgent
+
+WDA is located at `../WebDriverAgent` relative to this directory. It must be running on the simulator for UI automation to work.
+
+### Starting WDA
+
+```bash
+cd ../WebDriverAgent
+xcodebuild -project WebDriverAgent.xcodeproj \
+  -scheme WebDriverAgentRunner \
+  -destination 'platform=iOS Simulator,id=<UDID>' \
+  test
+```
+
+### WDA Host Configuration
+
+WDA typically binds to the machine's network IP (e.g., `192.168.1.30:8100`), not `127.0.0.1`. Set `WDA_HOST` environment variable or pass `host` parameter to `start_bridge`.
+
+## Common Development Tasks
+
+### Running the Server
+
+```bash
+source venv/bin/activate
+WDA_HOST=192.168.1.30 python -m ios_simulator_mcp.server
+```
+
+### Testing Changes
+
+```bash
+# Test imports and basic functionality
+python scripts/test_install.py
+
+# Manual testing via MCP client
+# Configure your MCP client to connect to the server
+```
+
+### Adding a New Tool
+
+1. Add `Tool` definition to `TOOLS` list in `server.py`
+2. Add handler in `handle_tool()` function
+3. If WDA API needed, add method to `wda_client.py`
+
+## WDA API Reference
+
+### Session Management
+- `POST /session` - Create session
+- `DELETE /session/{id}` - Delete session
+- `GET /status` - Server status
+
+### UI Hierarchy
+- `GET /session/{id}/source?format=json` - Get UI tree (JSON)
+- `GET /session/{id}/source` - Get UI tree (XML)
+
+### Touch Actions (W3C Actions API - preferred)
+```python
+{
+    "actions": [{
+        "type": "pointer",
+        "id": "finger1",
+        "parameters": {"pointerType": "touch"},
+        "actions": [
+            {"type": "pointerMove", "x": x, "y": y},
+            {"type": "pointerDown", "button": 0},
+            {"type": "pause", "duration": 50},
+            {"type": "pointerUp", "button": 0}
+        ]
+    }]
+}
+```
+
+### WDA-Specific Endpoints (fallback)
+- `POST /session/{id}/wda/tap/0` - Tap at coordinates
+- `POST /session/{id}/wda/doubleTap` - Double tap
+- `POST /session/{id}/wda/touchAndHold` - Long press
+- `POST /session/{id}/wda/dragfromtoforduration` - Swipe
+- `POST /session/{id}/wda/apps/launch` - Launch app
+- `POST /session/{id}/wda/pressButton` - Hardware button
+
+## Error Handling
+
+### Common WDA Errors
+
+1. **Session expired**: Use `reset_session` tool or call `delete_session()` + `create_session()`
+2. **Connection refused**: WDA not running, check with `health_check()`
+3. **Unknown error**: Usually means WDA returned an error in unexpected format - check logs
+
+### Error Response Formats
+
+WDA can return errors in multiple formats:
+```python
+# Standard WebDriver
+{"error": "no such element", "message": "..."}
+
+# WDA-specific
+{"value": {"error": "...", "message": "..."}}
+
+# Status code
+{"status": 7, "value": {"message": "..."}}
+```
+
+## Simulator Management
+
+### simctl Commands Used
+
+```bash
+xcrun simctl list devices -j       # List devices (JSON)
+xcrun simctl boot <UDID>           # Boot simulator
+xcrun simctl shutdown <UDID>       # Shutdown simulator
+xcrun simctl io <UDID> screenshot  # Take screenshot
+xcrun simctl launch <UDID> <app>   # Launch app
+xcrun simctl openurl <UDID> <url>  # Open URL
+```
+
+## UI Tree Format
+
+Elements are indexed for easy reference:
+```
+[0] Application "MyApp"
+  [1] Window
+    [2] Button "Login"
+    [3] TextField "Username"
+    [4] SecureTextField "Password"
+```
+
+Use index in `tap` command: `tap device_id="..." index=2`
+
+## Screenshot Optimization
+
+Screenshots are automatically optimized to reduce context usage:
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `scale` | 0.5 | Scale factor (0.5 = half size) |
+| `format` | jpeg | `jpeg` (smaller) or `png` (lossless) |
+| `quality` | 85 | JPEG quality 1-100 |
+
+**Typical results:**
+- Original: 1170x2532 PNG = ~620KB
+- Optimized: 585x1266 JPEG = ~50KB (91% reduction)
+
+**When to use different settings:**
+- Default (`scale=0.5, format=jpeg`): General automation, UI verification
+- `scale=1.0`: Need to read small text or see fine details
+- `format=png`: Need pixel-perfect accuracy, OCR on text
+- `scale=0.25`: Quick state checks, thumbnails
+
+## Tips for AI Assistants
+
+1. **Always call `start_bridge` first** before any UI automation
+2. **Get UI tree** before tapping to see available elements
+3. **Use predicates** for robust element selection (vs hardcoded indices)
+4. **Reset session** if getting repeated errors
+5. **Check WDA host** - often not localhost
+6. **Screenshots are optimized by default** - 50% scale JPEG saves ~90% context
+7. **Use `scale=1.0`** only when you need to read small text
+8. **Screenshots saved to** `/tmp/ios-simulator-mcp/screenshots/`
+
+## Dependencies
+
+- `mcp>=1.0.0` - MCP SDK
+- `httpx>=0.27.0` - Async HTTP client
+- `Pillow>=10.0.0` - Image processing (for screenshots)
+
+## File Locations
+
+- Screenshots: `/tmp/ios-simulator-mcp/screenshots/`
+- WDA Project: `../WebDriverAgent/`
+- Simulator data: `~/Library/Developer/CoreSimulator/Devices/<UDID>/`
