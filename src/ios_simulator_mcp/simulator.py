@@ -416,8 +416,13 @@ class SimulatorManager:
         udid: str,
         time: str | None = None,
         battery_level: int | None = None,
+        battery_state: str | None = None,
+        data_network: str | None = None,
         wifi_mode: str | None = None,
+        wifi_bars: int | None = None,
         cellular_mode: str | None = None,
+        cellular_bars: int | None = None,
+        operator_name: str | None = None,
     ) -> None:
         """Override status bar appearance.
 
@@ -425,18 +430,33 @@ class SimulatorManager:
             udid: Simulator UDID
             time: Time string (e.g., "9:41")
             battery_level: Battery level 0-100
+            battery_state: 'charging', 'charged', 'discharging'
+            data_network: 'hide', 'wifi', '3g', '4g', 'lte', 'lte-a', 'lte+', '5g', '5g+', '5g-uwb', '5g-uc'
             wifi_mode: 'searching', 'failed', 'active'
+            wifi_bars: 0-3
             cellular_mode: 'notSupported', 'searching', 'failed', 'active'
+            cellular_bars: 0-4
+            operator_name: Carrier name (empty string to hide)
         """
         args = ["status_bar", udid, "override"]
-        if time:
+        if time is not None:
             args.extend(["--time", time])
         if battery_level is not None:
             args.extend(["--batteryLevel", str(battery_level)])
-        if wifi_mode:
+        if battery_state is not None:
+            args.extend(["--batteryState", battery_state])
+        if data_network is not None:
+            args.extend(["--dataNetwork", data_network])
+        if wifi_mode is not None:
             args.extend(["--wifiMode", wifi_mode])
-        if cellular_mode:
+        if wifi_bars is not None:
+            args.extend(["--wifiBars", str(wifi_bars)])
+        if cellular_mode is not None:
             args.extend(["--cellularMode", cellular_mode])
+        if cellular_bars is not None:
+            args.extend(["--cellularBars", str(cellular_bars)])
+        if operator_name is not None:
+            args.extend(["--operatorName", operator_name])
 
         await self._run_simctl(*args, timeout=10.0)
 

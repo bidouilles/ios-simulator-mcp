@@ -180,6 +180,8 @@ Add to `~/.claude/settings.json` or project `.claude/settings.json`:
 | `get_clipboard` | Get clipboard content |
 | `set_clipboard` | Set clipboard content |
 | `get_window_size` | Get screen dimensions |
+| `set_status_bar` | Override status bar (time, battery, network) for consistent screenshots |
+| `clear_status_bar` | Clear status bar overrides |
 
 ### Alerts
 
@@ -273,6 +275,32 @@ Original: 1170x2532 (618.7KB)
 Optimized: 585x1266 (52.3KB)
 Reduction: 91.5%
 ```
+
+### Status Bar Override (for consistent screenshots)
+
+```
+# Classic "9:41" Apple marketing look
+set_status_bar device_id="..." time="9:41" battery_level=100 wifi_bars=3
+
+# Full control
+set_status_bar device_id="..." time="9:41" battery_level=100 battery_state="charged" data_network="5g" cellular_bars=4 operator_name="Carrier"
+
+# Reset to normal
+clear_status_bar device_id="..."
+```
+
+**Available options:**
+| Parameter | Values | Description |
+|-----------|--------|-------------|
+| `time` | string | Time to display (e.g., "9:41") |
+| `battery_level` | 0-100 | Battery percentage |
+| `battery_state` | charging, charged, discharging | Battery icon state |
+| `data_network` | hide, wifi, 3g, 4g, lte, lte-a, lte+, 5g, 5g+, 5g-uwb, 5g-uc | Network type |
+| `wifi_mode` | searching, failed, active | WiFi connection state |
+| `wifi_bars` | 0-3 | WiFi signal strength |
+| `cellular_mode` | notSupported, searching, failed, active | Cellular state |
+| `cellular_bars` | 0-4 | Cellular signal strength |
+| `operator_name` | string | Carrier name (empty to hide) |
 
 ## Predicate Fields
 

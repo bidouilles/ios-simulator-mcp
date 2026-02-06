@@ -142,7 +142,20 @@ xcrun simctl shutdown <UDID>       # Shutdown simulator
 xcrun simctl io <UDID> screenshot  # Take screenshot
 xcrun simctl launch <UDID> <app>   # Launch app
 xcrun simctl openurl <UDID> <url>  # Open URL
+xcrun simctl status_bar <UDID> override --time "9:41"  # Override status bar
+xcrun simctl status_bar <UDID> clear  # Clear overrides
 ```
+
+### Status Bar Override
+
+Use `set_status_bar` for consistent screenshots (e.g., App Store submissions):
+```
+set_status_bar device_id="..." time="9:41" battery_level=100 wifi_bars=3
+```
+
+Common options: `time`, `battery_level`, `battery_state`, `data_network`, `wifi_bars`, `cellular_bars`, `operator_name`
+
+Clear with `clear_status_bar device_id="..."`
 
 ## UI Tree Format
 
@@ -187,6 +200,7 @@ Screenshots are automatically optimized to reduce context usage:
 6. **Screenshots are optimized by default** - 50% scale JPEG saves ~90% context
 7. **Use `scale=1.0`** only when you need to read small text
 8. **Screenshots saved to** `/tmp/ios-simulator-mcp/screenshots/`
+9. **Use `set_status_bar`** for consistent screenshots (time="9:41", battery_level=100)
 
 ## Dependencies
 

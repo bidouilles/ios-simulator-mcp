@@ -595,6 +595,80 @@ TOOLS = [
             "required": ["device_id"],
         },
     ),
+    Tool(
+        name="set_status_bar",
+        description="Override status bar appearance (time, battery, network). Useful for consistent screenshots.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "device_id": {
+                    "type": "string",
+                    "description": "Simulator UDID",
+                },
+                "time": {
+                    "type": "string",
+                    "description": "Time string to display (e.g., '9:41')",
+                },
+                "battery_level": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Battery level 0-100",
+                },
+                "battery_state": {
+                    "type": "string",
+                    "enum": ["charging", "charged", "discharging"],
+                    "description": "Battery state",
+                },
+                "data_network": {
+                    "type": "string",
+                    "enum": ["hide", "wifi", "3g", "4g", "lte", "lte-a", "lte+", "5g", "5g+", "5g-uwb", "5g-uc"],
+                    "description": "Data network type to display",
+                },
+                "wifi_mode": {
+                    "type": "string",
+                    "enum": ["searching", "failed", "active"],
+                    "description": "WiFi mode",
+                },
+                "wifi_bars": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 3,
+                    "description": "WiFi signal bars 0-3",
+                },
+                "cellular_mode": {
+                    "type": "string",
+                    "enum": ["notSupported", "searching", "failed", "active"],
+                    "description": "Cellular mode",
+                },
+                "cellular_bars": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4,
+                    "description": "Cellular signal bars 0-4",
+                },
+                "operator_name": {
+                    "type": "string",
+                    "description": "Carrier/operator name (empty string to hide)",
+                },
+            },
+            "required": ["device_id"],
+        },
+    ),
+    Tool(
+        name="clear_status_bar",
+        description="Clear all status bar overrides and return to normal",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "device_id": {
+                    "type": "string",
+                    "description": "Simulator UDID",
+                },
+            },
+            "required": ["device_id"],
+        },
+    ),
 ]
 
 
@@ -1018,6 +1092,74 @@ async def handle_tool(name: str, args: dict[str, Any]) -> str:
 
         await simulator_manager.set_location(device_id, latitude, longitude)
         return f"Location set to ({latitude}, {longitude})"
+
+    # === Status Bar ===
+
+    elif name == "set_status_bar":
+        device_id = args.get("device_id")
+        if not device_id:
+            raise ValueError("device_id is required")
+
+        # Extract all optional parameters
+        time = args.get("time")
+        battery_level = args.get("battery_level")
+        battery_state = args.get("battery_state")
+        data_network = args.get("data_network")
+        wifi_mode = args.get("wifi_mode")
+        wifi_bars = args.get("wifi_bars")
+        cellular_mode = args.get("cellular_mode")
+        cellular_bars = args.get("cellular_bars")
+        operator_name = args.get("operator_name")
+
+        # Check that at least one override is specified
+        overrides = [time, battery_level, battery_state, data_network,
+                     wifi_mode, wifi_bars, cellular_mode, cellular_bars, operator_name]
+        if all(v is None for v in overrides):
+            raise ValueError("At least one status bar override must be specified")
+
+        await simulator_manager.status_bar_override(
+            device_id,
+            time=time,
+            battery_level=battery_level,
+            battery_state=battery_state,
+            data_network=data_network,
+            wifi_mode=wifi_mode,
+            wifi_bars=wifi_bars,
+            cellular_mode=cellular_mode,
+            cellular_bars=cellular_bars,
+            operator_name=operator_name,
+        )
+
+        # Build response message
+        changes = []
+        if time is not None:
+            changes.append(f"time={time}")
+        if battery_level is not None:
+            changes.append(f"battery={battery_level}%")
+        if battery_state is not None:
+            changes.append(f"battery_state={battery_state}")
+        if data_network is not None:
+            changes.append(f"network={data_network}")
+        if wifi_mode is not None:
+            changes.append(f"wifi={wifi_mode}")
+        if wifi_bars is not None:
+            changes.append(f"wifi_bars={wifi_bars}")
+        if cellular_mode is not None:
+            changes.append(f"cellular={cellular_mode}")
+        if cellular_bars is not None:
+            changes.append(f"cellular_bars={cellular_bars}")
+        if operator_name is not None:
+            changes.append(f"operator={operator_name or '(hidden)'}")
+
+        return f"Status bar updated: {', '.join(changes)}"
+
+    elif name == "clear_status_bar":
+        device_id = args.get("device_id")
+        if not device_id:
+            raise ValueError("device_id is required")
+
+        await simulator_manager.status_bar_clear(device_id)
+        return "Status bar overrides cleared"
 
     # === Clipboard ===
 
