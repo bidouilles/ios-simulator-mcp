@@ -536,9 +536,12 @@ ios-simulator-mcp/
 └── src/ios_simulator_mcp/
     ├── __init__.py
     ├── server.py                     # MCP server & tools
+    ├── dashboard.py                  # Web dashboard server
     ├── simulator.py                  # simctl integration
     ├── wda_client.py                 # WebDriverAgent client
-    └── ui_tree.py                    # UI hierarchy parsing
+    ├── ui_tree.py                    # UI hierarchy parsing
+    └── templates/
+        └── dashboard.html            # Dashboard UI (HTML/CSS/JS)
 ```
 
 ## License

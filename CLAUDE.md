@@ -29,7 +29,8 @@ This Python MCP server enables AI assistants to automate iOS Simulators via WebD
 - **`wda_client.py`**: HTTP client for WebDriverAgent API (W3C WebDriver + WDA extensions)
 - **`simulator.py`**: iOS Simulator management via `xcrun simctl`
 - **`ui_tree.py`**: Parses WDA accessibility hierarchy into usable format
-- **`dashboard.py`**: Real-time web dashboard with WebSocket updates
+- **`dashboard.py`**: Web dashboard server (Python handlers, WebSocket, state management)
+- **`templates/dashboard.html`**: Dashboard UI (HTML/CSS/JS) - separated for cleaner code
 
 ## WebDriverAgent
 
@@ -314,14 +315,26 @@ This enables:
 
 ## Web Dashboard
 
-The server includes a real-time dashboard at `http://localhost:8200` that:
-- Shows all tool calls with arguments, results, and timing
-- Displays device info and WDA connection status
-- Previews the last screenshot
-- Updates via WebSocket for real-time monitoring
+The server includes a real-time dashboard at `http://localhost:8200` with:
 
-Disable auto-open: `DASHBOARD_AUTO_OPEN=false`
-Change port: `DASHBOARD_PORT=9000`
+**Features:**
+- Real-time tool call monitoring with arguments, results, and timing
+- Device info and WDA connection status
+- Live screenshot preview with click-to-tap support
+- Quick actions: Connect, Capture, Home, UI Tree, Record, Apps
+- Swipe controls (up/down/left/right)
+- Text input field for typing
+- App launcher dropdown
+- Sequence recording and playback (save/replay action sequences)
+- Keyboard shortcuts: `S` (screenshot), `H` (home), `R` (record), `U` (UI tree), `T` (text input)
+
+**Architecture:**
+- `dashboard.py`: Python server with aiohttp, WebSocket handlers, state management
+- `templates/dashboard.html`: Frontend UI with vanilla JS (no framework dependencies)
+
+**Configuration:**
+- Disable auto-open: `DASHBOARD_AUTO_OPEN=false`
+- Change port: `DASHBOARD_PORT=9000`
 
 ## File Locations
 
