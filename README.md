@@ -47,6 +47,7 @@ claude mcp add ios-simulator -e WDA_HOST=192.168.1.30 -- /path/to/ios-simulator-
 - **App Control**: Launch, terminate, and list installed apps
 - **Alert Handling**: Accept, dismiss, and read alert dialogs
 - **System Control**: Set location, manage clipboard, press hardware buttons
+- **Web Dashboard**: Real-time tool call monitoring at http://localhost:8200
 
 ## Prerequisites
 
@@ -489,12 +490,36 @@ Screenshots are saved to `/tmp/ios-simulator-mcp/screenshots/`. Use the file pat
 
 Use `reset_session` to create a fresh WDA session.
 
+## Web Dashboard
+
+The MCP server includes a real-time web dashboard that shows all tool calls, device status, and screenshots.
+
+**Features:**
+- Real-time tool call monitoring via WebSocket
+- Device info display
+- Last screenshot preview
+- Recording status indicator
+- Success rate and timing statistics
+
+**Access:** Opens automatically at `http://localhost:8200` when the server starts.
+
+**Configuration:**
+```bash
+# Change dashboard port
+DASHBOARD_PORT=9000
+
+# Disable auto-open browser
+DASHBOARD_AUTO_OPEN=false
+```
+
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `WDA_HOST` | `127.0.0.1` | WebDriverAgent host |
 | `WDA_PORT` | `8100` | WebDriverAgent port (via start_bridge) |
+| `DASHBOARD_PORT` | `8200` | Web dashboard port |
+| `DASHBOARD_AUTO_OPEN` | `true` | Auto-open dashboard in browser |
 
 ## Project Structure
 

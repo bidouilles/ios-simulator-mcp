@@ -25,6 +25,7 @@ from mcp.types import (
 from .simulator import SimulatorManager, SimulatorError
 from .wda_client import WDAClient, WDAError
 from .ui_tree import UITreeParser, find_element_by_predicate
+from .dashboard import dashboard_state, start_dashboard, stop_dashboard, DASHBOARD_PORT
 
 # Configure logging - DEBUG level shows all tool calls
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "DEBUG").upper()
@@ -1051,6 +1052,9 @@ async def call_tool(name: str, arguments: dict[str, Any] | None) -> list[TextCon
     logger.info(log_msg)
     print(log_msg, file=sys.stderr, flush=True)
 
+    # Track tool call in dashboard
+    tool_call = dashboard_state.add_tool_call(name, args)
+
     try:
         result = await handle_tool(name, args)
         # Log result (truncate if too long)
@@ -1058,16 +1062,28 @@ async def call_tool(name: str, arguments: dict[str, Any] | None) -> list[TextCon
         log_msg = f"<<< RESULT: {result_preview}"
         logger.info(log_msg)
         print(log_msg, file=sys.stderr, flush=True)
+
+        # Complete tool call in dashboard
+        dashboard_state.complete_tool_call(tool_call, result=result)
+
         return [TextContent(type="text", text=result)]
     except (SimulatorError, WDAError) as e:
         log_msg = f"<<< ERROR: {e}"
         logger.error(log_msg)
         print(log_msg, file=sys.stderr, flush=True)
+
+        # Track error in dashboard
+        dashboard_state.complete_tool_call(tool_call, error=str(e))
+
         return [TextContent(type="text", text=f"Error: {e}")]
     except Exception as e:
         log_msg = f"<<< EXCEPTION in tool {name}: {e}"
         logger.exception(log_msg)
         print(log_msg, file=sys.stderr, flush=True)
+
+        # Track error in dashboard
+        dashboard_state.complete_tool_call(tool_call, error=str(e))
+
         return [TextContent(type="text", text=f"Internal error: {e}")]
 
 
@@ -1131,6 +1147,19 @@ async def handle_tool(name: str, args: dict[str, Any]) -> str:
         client = get_wda_client(device_id, port, host)
         if await client.health_check():
             await client.create_session()
+
+            # Update dashboard with device info
+            device = await simulator_manager.get_device(device_id)
+            if device:
+                dashboard_state.update_device_info({
+                    "name": device.name,
+                    "udid": device.udid,
+                    "ios_version": device.ios_version,
+                    "state": device.state.value,
+                    "wda_connected": True,
+                    "wda_host": f"{host}:{port}",
+                })
+
             return f"WebDriverAgent is running at {host}:{port}. Session created (ID: {client.session_id})."
         else:
             return (
@@ -1974,18 +2003,26 @@ def main():
     logger.info(f"WDA_HOST: {WDA_HOST}")
     logger.info(f"WDA_PORT: {DEFAULT_WDA_PORT}")
     logger.info(f"Screenshot dir: {SCREENSHOT_DIR}")
+    logger.info(f"Dashboard port: {DASHBOARD_PORT}")
     logger.info(f"Log level: {LOG_LEVEL}")
     logger.info("=" * 60)
 
     async def run():
-        logger.info("Server ready, waiting for MCP client connection...")
-        async with stdio_server() as (read_stream, write_stream):
-            logger.info("MCP client connected")
-            await server.run(
-                read_stream,
-                write_stream,
-                server.create_initialization_options(),
-            )
+        # Start the dashboard server
+        dashboard_runner = await start_dashboard()
+
+        try:
+            logger.info("Server ready, waiting for MCP client connection...")
+            async with stdio_server() as (read_stream, write_stream):
+                logger.info("MCP client connected")
+                await server.run(
+                    read_stream,
+                    write_stream,
+                    server.create_initialization_options(),
+                )
+        finally:
+            # Stop the dashboard when MCP server stops
+            await stop_dashboard(dashboard_runner)
 
     try:
         asyncio.run(run())

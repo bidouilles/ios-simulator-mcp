@@ -29,6 +29,7 @@ This Python MCP server enables AI assistants to automate iOS Simulators via WebD
 - **`wda_client.py`**: HTTP client for WebDriverAgent API (W3C WebDriver + WDA extensions)
 - **`simulator.py`**: iOS Simulator management via `xcrun simctl`
 - **`ui_tree.py`**: Parses WDA accessibility hierarchy into usable format
+- **`dashboard.py`**: Real-time web dashboard with WebSocket updates
 
 ## WebDriverAgent
 
@@ -310,6 +311,17 @@ This enables:
 - `mcp>=1.0.0` - MCP SDK
 - `httpx>=0.27.0` - Async HTTP client
 - `Pillow>=10.0.0` - Image processing (for screenshots)
+
+## Web Dashboard
+
+The server includes a real-time dashboard at `http://localhost:8200` that:
+- Shows all tool calls with arguments, results, and timing
+- Displays device info and WDA connection status
+- Previews the last screenshot
+- Updates via WebSocket for real-time monitoring
+
+Disable auto-open: `DASHBOARD_AUTO_OPEN=false`
+Change port: `DASHBOARD_PORT=9000`
 
 ## File Locations
 
