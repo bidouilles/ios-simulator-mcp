@@ -42,10 +42,10 @@ logging.basicConfig(
     level=getattr(logging, LOG_LEVEL, logging.DEBUG),
     handlers=[handler],
 )
-logger = logging.getLogger("ios-simulator-mcp")
+logger = logging.getLogger("mobile-pilot-mcp")
 
 # Constants
-SCREENSHOT_DIR = Path("/tmp/ios-simulator-mcp/screenshots")
+SCREENSHOT_DIR = Path("/tmp/mobile-pilot-mcp/screenshots")
 DEFAULT_WDA_PORT = 8100
 
 # Global state
@@ -148,7 +148,7 @@ def _iter_named_tools(tools: Any) -> Iterator[tuple[str, Any]]:
 async def lifespan(mcp: FastMCP):
     """Manage dashboard server lifecycle."""
     logger.info("=" * 60)
-    logger.info("iOS Simulator MCP Server starting...")
+    logger.info("Mobile Pilot MCP Server starting...")
     logger.info(f"WDA_HOST: {WDA_HOST}")
     logger.info(f"WDA_PORT: {DEFAULT_WDA_PORT}")
     logger.info("WDA port override: pass `port` to `start_bridge` per connection")
@@ -183,20 +183,27 @@ async def lifespan(mcp: FastMCP):
 
     dashboard_state.tool_executor = execute_tool_from_dashboard
 
-    # Start dashboard server
-    dashboard_runner = await start_dashboard()
+    # Start dashboard server (best-effort).
+    # Some MCP runtimes restrict local port binding; the MCP server should
+    # still run even when the dashboard cannot start.
+    dashboard_runner = None
+    try:
+        dashboard_runner = await start_dashboard()
+    except Exception as exc:
+        logger.warning("Dashboard disabled (failed to start): %s", exc)
     logger.info("Server ready, waiting for MCP client connection...")
 
     try:
         yield
     finally:
-        await stop_dashboard(dashboard_runner)
+        if dashboard_runner is not None:
+            await stop_dashboard(dashboard_runner)
 
 
 # === Create FastMCP Server ===
 
 mcp = FastMCP(
-    "ios-simulator-mcp",
+    "mobile-pilot-mcp",
     lifespan=lifespan,
 )
 
@@ -1126,7 +1133,7 @@ async def discover_dtd_uris(
 # === Resources ===
 
 
-API_REFERENCE = """# iOS Simulator MCP API Reference
+API_REFERENCE = """# Mobile Pilot MCP API Reference
 
 ## Device Management
 
@@ -1213,7 +1220,7 @@ API_REFERENCE = """# iOS Simulator MCP API Reference
 - Notes: `com.apple.mobilenotes`
 """
 
-AUTOMATION_GUIDE = """# iOS Simulator Automation Guide
+AUTOMATION_GUIDE = """# Mobile Pilot MCP Automation Guide
 
 ## Workflow
 
@@ -1278,20 +1285,20 @@ tap device_id="..." x=200 y=400
 """
 
 
-@mcp.resource("ios-sim://api-reference")
+@mcp.resource("mobile-pilot://api-reference")
 def get_api_reference() -> str:
-    """iOS Simulator MCP API Reference - Complete API documentation."""
+    """Mobile Pilot MCP API Reference - Complete API documentation."""
     return API_REFERENCE
 
 
-@mcp.resource("ios-sim://automation-guide")
+@mcp.resource("mobile-pilot://automation-guide")
 def get_automation_guide() -> str:
-    """iOS Simulator Automation Guide - Guide for automating iOS simulators."""
+    """Mobile Pilot MCP Automation Guide - Guide for automating mobile simulators."""
     return AUTOMATION_GUIDE
 
 
 # Backward-compatible export for existing imports:
-# `from ios_simulator_mcp.server import server`
+# `from mobile_pilot_mcp.server import server`
 server = mcp
 
 

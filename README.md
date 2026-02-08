@@ -1,125 +1,85 @@
-# ios-simulator-mcp
+# Mobile Pilot MCP
 
 ![Dashboard Screenshot](docs/dashboard-screenshot.png)
 
-[![Build Status](https://github.com/bidouilles/ios-simulator-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/bidouilles/ios-simulator-mcp/actions/workflows/ci.yml)
+[![Build Status](https://github.com/bidouilles/mobile-pilot-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/bidouilles/mobile-pilot-mcp/actions/workflows/ci.yml)
 
-MCP server for iOS Simulator automation through WebDriverAgent.
-Use it from Claude, Cursor, Windsurf, and other MCP clients to tap, type, swipe, take screenshots, launch apps, and monitor sessions live.
+**Your AI co-pilot for mobile simulators.**
 
-## Why This Project
+Other tools let you tap. We give you a cockpit.
 
-- Fast UI iteration on iOS simulators with natural-language automation.
-- Reliable visual validation with screenshots, recordings, and a live dashboard.
-- Better Flutter workflows when paired with Dart MCP for runtime + tooling context.
+Mobile Pilot MCP gives AI assistants a control plane for simulator automation, visual validation, and repeatable mobile workflows.
 
-## Prerequisites
+## Why Mobile Pilot MCP
 
-- macOS with Xcode installed
-- Xcode Command Line Tools: `xcode-select --install`
-- Python 3.10+
-- WebDriverAgent cloned locally from `https://github.com/appium/WebDriverAgent`
+- Cockpit dashboard with real-time tool calls, device controls, and visual feedback
+- Fast automation loops for taps, swipes, typing, screenshots, recording, and app actions
+- Flutter-first workflow when paired with Dart MCP server
+- Cross-platform direction: iOS today, Android coming soon
 
-## Quick Start
-
-1. Install and activate:
+## Quick Start (4 Commands)
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -e .
-```
-
-2. Start WebDriverAgent:
-
-```bash
-# clone once (if you do not already have it)
-git clone https://github.com/appium/WebDriverAgent.git ~/WebDriverAgent
-
-# default path used by script: $HOME/WebDriverAgent
-./scripts/start_wda.sh
-# or
+python3 -m venv venv && source venv/bin/activate && pip install -e .
 ./scripts/start_wda.sh <UDID>
-
-# optional explicit form (same as default)
-WDA_PATH=~/WebDriverAgent ./scripts/start_wda.sh <UDID>
-
-# if your clone is elsewhere, set the actual path (example: sibling directory)
-WDA_PATH=../WebDriverAgent ./scripts/start_wda.sh <UDID>
-```
-
-3. Add MCP server to Claude Code:
-
-```bash
-claude mcp add ios-simulator -- /path/to/ios-simulator-mcp/venv/bin/ios-simulator-mcp
+claude mcp add mobile-pilot -- /path/to/mobile-pilot-mcp/venv/bin/mobile-pilot-mcp
+python scripts/test_install.py
 ```
 
 If WDA is not on localhost:
 
 ```bash
-claude mcp add ios-simulator -e WDA_HOST=192.168.1.30 -- /path/to/ios-simulator-mcp/venv/bin/ios-simulator-mcp
+claude mcp add mobile-pilot -e WDA_HOST=192.168.1.30 -- /path/to/mobile-pilot-mcp/venv/bin/mobile-pilot-mcp
 ```
 
-Optional verification:
+## Try This First
 
-```bash
-python scripts/test_install.py
-```
+Once connected in your MCP client, try prompts like:
 
-## Dashboard
+- `List my booted simulators and connect to the first one.`
+- `Take a screenshot, then show me the UI tree and tap the Settings button.`
+- `Launch Safari, open https://flutter.dev, and capture another screenshot.`
+- `Start a recording, perform a swipe up, stop recording, and give me the output path.`
 
-The dashboard runs automatically with the server at `http://localhost:8200`.
+## Flutter + Dart MCP
 
-Main capabilities:
-- Real-time tool-call monitoring
-- Live screenshot preview with click-to-tap
-- Quick actions (connect, capture, home, UI tree, recording, apps)
-
-## Flutter Development
-
-For Flutter work, use this MCP server together with Dart MCP to combine simulator control and Flutter runtime tooling.
-
-Reference: [Flutter announcement (July 23, 2025)](https://blog.flutter.dev/supercharge-your-dart-flutter-development-experience-with-the-dart-mcp-server-2edcc8107b49)
-
-Minimum versions called out in that announcement:
-- Dart SDK `3.9+`
-- Flutter `3.35 beta+`
+Use both servers together for a stronger Flutter dev loop.
 
 ```bash
 claude mcp add --transport stdio dart -- dart mcp-server
 ```
 
 Recommended split:
-- `ios-simulator-mcp`: simulator control, screenshots, gestures, app/system actions
+- `mobile-pilot-mcp`: simulator control, screenshots, gestures, app/system actions
 - `dart mcp-server`: runtime errors, widget/runtime introspection, hot reload, tests, pub.dev/package workflows
 
-Optional (older Dart setups that still need experimental flag):
+Reference: [Supercharge Your Dart & Flutter Development Experience with the Dart and Flutter MCP Server](https://blog.flutter.dev/supercharge-your-dart-flutter-development-experience-with-the-dart-mcp-server-2edcc8107b49)
 
-```bash
-claude mcp add --transport stdio dart -- dart mcp-server --experimental-mcp-server
-```
+## Comparison
 
-## Where Everything Else Lives
+| Capability | Mobile Pilot MCP | Typical simulator-only MCP |
+|---|---|---|
+| Dashboard cockpit | Yes | Usually no |
+| Real-time tool-call timeline | Yes | Usually no |
+| Visual interaction loop (live screenshot + actions) | Yes | Partial |
+| Flutter pairing story (Dart MCP) | First-class | Rare |
+| Cross-platform roadmap | iOS now, Android planned | Often iOS-only |
 
-Detailed documentation is in `docs/`:
+## Dashboard
 
-- [Setup and Configuration](docs/setup-and-config.md) for full setup, WDA host/port details, env vars, and client configuration
-- [Tools Reference](docs/tools-reference.md) for complete tool catalog, predicates, bundle IDs, and examples
-- [Troubleshooting](docs/troubleshooting.md) for common errors and fixes
-- [Docs Index](docs/README.md) for all docs pages
+Available at `http://localhost:8200` when the server starts.
 
-## Development
+## Documentation
 
-```bash
-pip install -e "[dev]"
-ruff check .
-python scripts/test_install.py
-```
+- [Setup and Configuration](docs/setup-and-config.md)
+- [Tools Reference](docs/tools-reference.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Documentation Index](docs/README.md)
 
 ## Contributing
 
 1. Fork and clone the repository.
-2. Set up local environment:
+2. Set up local environment and install dev deps:
 
 ```bash
 python3 -m venv venv
@@ -127,19 +87,14 @@ source venv/bin/activate
 pip install -e "[dev]"
 ```
 
-3. Run quality checks before opening a PR:
+3. Run checks before opening a PR:
 
 ```bash
 ruff check .
 python scripts/test_install.py
 ```
 
-4. Open a PR with:
-- clear purpose and scope
-- verification steps/commands
-- screenshot/recording for dashboard or UI behavior changes
-
-Contributor conventions and repo guidelines are documented in `AGENTS.md`.
+4. For dashboard/UI changes, include a screenshot or short recording in the PR.
 
 ## License
 

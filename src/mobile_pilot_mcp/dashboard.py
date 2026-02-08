@@ -1,4 +1,4 @@
-"""Web dashboard for iOS Simulator MCP server."""
+"""Web dashboard for Mobile Pilot MCP server."""
 
 from __future__ import annotations
 
