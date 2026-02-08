@@ -4,9 +4,9 @@ This file provides context for AI assistants working on this project.
 
 ## Project Overview
 
-**mobile-pilot-mcp** - MCP server for iOS Simulator automation via WebDriverAgent. Control simulators from Claude, Cursor, and other AI assistants. Tap, type, swipe, screenshot, launch apps, and more.
+**mobile-pilot-mcp** - Your AI co-pilot for mobile simulators. MCP server for iOS Simulator automation via WebDriverAgent. Control simulators from Claude, Cursor, and other AI assistants. Tap, type, swipe, screenshot, launch apps, and more. iOS today, Android coming soon.
 
-This Python MCP server enables AI assistants to automate iOS Simulators via WebDriverAgent (WDA). It provides tools for UI automation, screenshots, app control, and system interactions.
+This Python MCP server enables AI assistants to automate iOS Simulators via WebDriverAgent (WDA). It provides 37 tools and 2 resources for UI automation, screenshots, app control, and system interactions.
 
 ## Architecture
 
@@ -34,12 +34,16 @@ This Python MCP server enables AI assistants to automate iOS Simulators via WebD
 
 ## WebDriverAgent
 
-WDA is located at `../WebDriverAgent` relative to this directory. It must be running on the simulator for UI automation to work.
+WDA defaults to `~/WebDriverAgent`. Override with the `WDA_PATH` environment variable. It must be running on the simulator for UI automation to work.
 
 ### Starting WDA
 
 ```bash
-cd ../WebDriverAgent
+# Using the helper script (recommended):
+./scripts/start_wda.sh <UDID>
+
+# Or manually:
+cd ~/WebDriverAgent
 xcodebuild -project WebDriverAgent.xcodeproj \
   -scheme WebDriverAgentRunner \
   -destination 'platform=iOS Simulator,id=<UDID>' \
@@ -50,7 +54,17 @@ xcodebuild -project WebDriverAgent.xcodeproj \
 
 WDA typically binds to the machine's network IP (e.g., `192.168.1.30:8100`), not `127.0.0.1`. Set `WDA_HOST` environment variable or pass `host` parameter to `start_bridge`.
 
-## Common Development Tasks
+## Build, Test, and Development Commands
+
+- `python3 -m venv venv && source venv/bin/activate`: create/activate local environment.
+- `pip install -e .`: install the package in editable mode.
+- `pip install -e ".[dev]"`: install development tools (`pytest`, `pytest-asyncio`, `ruff`).
+- `./scripts/setup.sh`: one-step prerequisite check + local setup.
+- `./scripts/start_wda.sh <UDID>`: launch WebDriverAgent for a simulator.
+- `./scripts/run_server.sh`: start MCP server from local source.
+- `python scripts/test_install.py`: smoke test imports, simulator discovery, and WDA health.
+- `pytest`: run test suite (includes `tests/test_server_contract.py` for FastMCP compatibility).
+- `ruff check .`: run lint checks.
 
 ### Running the Server
 
@@ -62,8 +76,11 @@ WDA_HOST=192.168.1.30 python -m mobile_pilot_mcp.server
 ### Testing Changes
 
 ```bash
-# Test imports and basic functionality
+# Smoke test imports and basic functionality
 python scripts/test_install.py
+
+# Contract tests for FastMCP tool/resource registration
+pytest tests/test_server_contract.py
 
 # Manual testing via MCP client
 # Configure your MCP client to connect to the server
@@ -74,6 +91,21 @@ python scripts/test_install.py
 1. Add a `@mcp.tool` decorated async function in `server.py`
 2. Use `Annotated[..., Field(...)]` for parameter descriptions
 3. If WDA API needed, add method to `wda_client.py`
+
+## Coding Style & Conventions
+
+- Target runtime: Python 3.10+.
+- Follow Ruff settings from `pyproject.toml` (`line-length = 100`, rules `E,F,I,W`).
+- Use type hints and `from __future__ import annotations` for new modules.
+- Naming: `snake_case` for functions/variables, `PascalCase` for classes, `UPPER_CASE` for constants.
+- Keep modules focused; avoid mixing transport, parsing, and simulator orchestration logic in one file.
+
+## Commit & Pull Request Guidelines
+
+Recent history follows Conventional Commit types, often with an emoji prefix (example: `feat: ...`, `fix: ...`, `refactor: ...`).
+- Keep commit subjects imperative and scoped to one change.
+- PRs should include: purpose, key changes, verification steps/commands, and related issue links.
+- For dashboard or UI behavior changes, include a screenshot or short recording.
 
 ## WDA API Reference
 
@@ -199,6 +231,8 @@ Screenshots are automatically optimized to reduce context usage:
 - `format=png`: Need pixel-perfect accuracy, OCR on text
 - `scale=0.25`: Quick state checks, thumbnails
 
+**Landscape rotation:** Screenshots taken in landscape mode are automatically rotated to correct orientation using WDA orientation queries.
+
 ## Advanced Features
 
 ### Dark Mode Testing
@@ -249,7 +283,11 @@ type_text device_id="..." text="hello"
 dismiss_keyboard device_id="..."
 ```
 
-## Dart MCP Integration
+## Dart MCP Integration (Flutter Pairing)
+
+For the strongest Flutter dev loop, use both servers together:
+- `mobile-pilot-mcp`: simulator control, screenshots, gestures, app/system actions
+- `dart mcp-server`: runtime errors, widget/runtime introspection, hot reload, tests, pub.dev/package workflows
 
 The `discover_dtd_uris` tool helps discover running Dart Tooling Daemon (DTD) URIs on the local machine. These URIs are needed by the Dart MCP server for Flutter debugging features like hot reload, widget inspection, and runtime error reporting.
 
@@ -289,6 +327,12 @@ This enables:
 - `get_widget_tree` - Inspect Flutter widget hierarchy
 - `get_runtime_errors` - See errors from running app
 
+## MCP Resources
+
+The server exposes two resources for in-context reference:
+- `mobile-pilot://api-reference` - API reference documentation
+- `mobile-pilot://automation-guide` - Automation guide
+
 ## Tips for AI Assistants
 
 1. **Always call `start_bridge` first** before any UI automation
@@ -309,10 +353,12 @@ This enables:
 
 ## Dependencies
 
-- `fastmcp==2.14.4` - FastMCP SDK (pinned; see README for upgrade procedure)
+- `fastmcp==2.14.4` - FastMCP SDK (pinned for stability; see README for upgrade procedure)
 - `httpx>=0.27.0` - Async HTTP client
 - `Pillow>=10.0.0` - Image processing (for screenshots)
 - `aiohttp>=3.9.0` - Dashboard web server and WebSocket
+
+**FastMCP version policy:** The FastMCP dependency is pinned to avoid breaking changes. The server includes cross-version compatibility handling for tool/resource registration. Upgrade carefully and run `pytest tests/test_server_contract.py` to verify.
 
 ## Web Dashboard
 
@@ -341,5 +387,13 @@ The server includes a real-time dashboard at `http://localhost:8200` with:
 
 - Screenshots: `/tmp/mobile-pilot-mcp/screenshots/`
 - Recordings: `/tmp/mobile-pilot-mcp/recordings/`
-- WDA Project: `../WebDriverAgent/`
+- WDA Project: `~/WebDriverAgent/` (override with `WDA_PATH` env var)
 - Simulator data: `~/Library/Developer/CoreSimulator/Devices/<UDID>/`
+- Docs: `docs/` (setup, tools reference, troubleshooting)
+- Tests: `tests/test_server_contract.py` (FastMCP contract tests)
+- Scripts: `scripts/` (`setup.sh`, `start_wda.sh`, `run_server.sh`, `test_install.py`)
+
+## Security & Configuration
+
+- Do not commit simulator artifacts, logs with secrets, or local IP-specific credentials.
+- Use environment variables (`WDA_HOST`, `WDA_PATH`, `LOG_LEVEL`, `DASHBOARD_PORT`, `DASHBOARD_AUTO_OPEN`) instead of hardcoding local machine values.
