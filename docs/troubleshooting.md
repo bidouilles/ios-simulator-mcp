@@ -14,7 +14,7 @@
 
 ## Screenshots missing
 
-Screenshots are saved under `/tmp/ios-simulator-mcp/screenshots/`.
+Screenshots are saved under `/tmp/mobile-pilot-mcp/screenshots/`.
 Use the returned file path from `get_screenshot`.
 
 ## UI tree is empty

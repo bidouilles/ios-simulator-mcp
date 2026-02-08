@@ -1,7 +1,5 @@
 # Tools Reference
 
-This list is aligned with the tools registered in `src/ios_simulator_mcp/server.py`.
-
 ## Device Management
 
 | Tool | Description |

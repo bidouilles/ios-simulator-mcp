@@ -1,10 +1,10 @@
-# CLAUDE.md - ios-simulator-mcp
+# CLAUDE.md - mobile-pilot-mcp
 
 This file provides context for AI assistants working on this project.
 
 ## Project Overview
 
-**ios-simulator-mcp** - MCP server for iOS Simulator automation via WebDriverAgent. Control simulators from Claude, Cursor, and other AI assistants. Tap, type, swipe, screenshot, launch apps, and more.
+**mobile-pilot-mcp** - MCP server for iOS Simulator automation via WebDriverAgent. Control simulators from Claude, Cursor, and other AI assistants. Tap, type, swipe, screenshot, launch apps, and more.
 
 This Python MCP server enables AI assistants to automate iOS Simulators via WebDriverAgent (WDA). It provides tools for UI automation, screenshots, app control, and system interactions.
 
@@ -56,7 +56,7 @@ WDA typically binds to the machine's network IP (e.g., `192.168.1.30:8100`), not
 
 ```bash
 source venv/bin/activate
-WDA_HOST=192.168.1.30 python -m ios_simulator_mcp.server
+WDA_HOST=192.168.1.30 python -m mobile_pilot_mcp.server
 ```
 
 ### Testing Changes
@@ -217,7 +217,7 @@ Capture video of UI interactions:
 start_recording device_id="..." codec="hevc"
 # ... perform actions ...
 stop_recording device_id="..."
-# Returns: /tmp/ios-simulator-mcp/recordings/recording-YYYYMMDD-HHMMSS.mov
+# Returns: /tmp/mobile-pilot-mcp/recordings/recording-YYYYMMDD-HHMMSS.mov
 ```
 
 ### Biometric Simulation
@@ -298,7 +298,7 @@ This enables:
 5. **Check WDA host** - often not localhost
 6. **Screenshots are optimized by default** - 50% scale JPEG saves ~90% context
 7. **Use `scale=1.0`** only when you need to read small text
-8. **Screenshots saved to** `/tmp/ios-simulator-mcp/screenshots/`
+8. **Screenshots saved to** `/tmp/mobile-pilot-mcp/screenshots/`
 9. **Use `set_status_bar`** for consistent screenshots (time="9:41", battery_level=100)
 10. **Use `discover_dtd_uris`** to find DTD URIs for Dart MCP integration
 11. **Use `dismiss_keyboard`** after typing to clear the keyboard
@@ -339,7 +339,7 @@ The server includes a real-time dashboard at `http://localhost:8200` with:
 
 ## File Locations
 
-- Screenshots: `/tmp/ios-simulator-mcp/screenshots/`
-- Recordings: `/tmp/ios-simulator-mcp/recordings/`
+- Screenshots: `/tmp/mobile-pilot-mcp/screenshots/`
+- Recordings: `/tmp/mobile-pilot-mcp/recordings/`
 - WDA Project: `../WebDriverAgent/`
 - Simulator data: `~/Library/Developer/CoreSimulator/Devices/<UDID>/`

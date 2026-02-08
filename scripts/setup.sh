@@ -1,5 +1,5 @@
 #!/bin/bash
-# Setup script for iOS Simulator MCP Server
+# Setup script for Mobile Pilot MCP Server
 #
 # This script will:
 # 1. Check prerequisites
@@ -19,7 +19,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-echo -e "${BLUE}=== iOS Simulator MCP Server Setup ===${NC}"
+echo -e "${BLUE}=== Mobile Pilot MCP Server Setup ===${NC}"
 echo ""
 
 # Check Python version
@@ -125,8 +125,8 @@ echo "4. Configure your MCP client (Claude Code, Cursor, etc.):"
 echo "   Add to your MCP settings:"
 echo '   {'
 echo '     "mcpServers": {'
-echo '       "ios-simulator": {'
-echo '         "command": "'$PROJECT_DIR'/venv/bin/ios-simulator-mcp"'
+echo '       "mobile-pilot": {'
+echo '         "command": "'$PROJECT_DIR'/venv/bin/mobile-pilot-mcp"'
 echo '       }'
 echo '     }'
 echo '   }'

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run the iOS Simulator MCP Server
+# Run the Mobile Pilot MCP Server
 #
 # Usage: ./run_server.sh
 # Usage: WDA_HOST=192.168.1.30 ./run_server.sh
@@ -26,10 +26,10 @@ export LOG_LEVEL="${LOG_LEVEL:-DEBUG}"
 # Force unbuffered Python output
 export PYTHONUNBUFFERED=1
 
-echo "Starting iOS Simulator MCP Server..."
+echo "Starting Mobile Pilot MCP Server..."
 echo "  WDA_HOST: ${WDA_HOST:-127.0.0.1}"
 echo "  LOG_LEVEL: $LOG_LEVEL"
 echo ""
 
 # Run the server with unbuffered output
-exec python -u -m ios_simulator_mcp.server
+exec python -u -m mobile_pilot_mcp.server

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 
-from ios_simulator_mcp import server as server_module
+from mobile_pilot_mcp import server as server_module
 
 
 def test_server_compat_export_points_to_mcp() -> None:
@@ -38,5 +38,5 @@ def test_fastmcp_resources_registered() -> None:
     else:
         resource_keys = {resource.key for resource in resources}
 
-    assert "ios-sim://api-reference" in resource_keys
-    assert "ios-sim://automation-guide" in resource_keys
+    assert "mobile-pilot://api-reference" in resource_keys
+    assert "mobile-pilot://automation-guide" in resource_keys

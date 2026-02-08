@@ -64,9 +64,9 @@ xcrun simctl list devices | grep Booted
 ### Claude Code (CLI)
 
 ```bash
-claude mcp add ios-simulator -- /path/to/ios-simulator-mcp/venv/bin/ios-simulator-mcp
-claude mcp add ios-simulator -e WDA_HOST=192.168.1.30 -- /path/to/ios-simulator-mcp/venv/bin/ios-simulator-mcp
-claude mcp remove ios-simulator
+claude mcp add mobile-pilot -- /path/to/mobile-pilot-mcp/venv/bin/mobile-pilot-mcp
+claude mcp add mobile-pilot -e WDA_HOST=192.168.1.30 -- /path/to/mobile-pilot-mcp/venv/bin/mobile-pilot-mcp
+claude mcp remove mobile-pilot
 ```
 
 ### JSON config (Claude/Cursor/Windsurf)
@@ -74,8 +74,8 @@ claude mcp remove ios-simulator
 ```json
 {
   "mcpServers": {
-    "ios-simulator": {
-      "command": "/path/to/ios-simulator-mcp/venv/bin/ios-simulator-mcp",
+    "mobile-pilot": {
+      "command": "/path/to/mobile-pilot-mcp/venv/bin/mobile-pilot-mcp",
       "env": {
         "WDA_HOST": "192.168.1.30"
       }

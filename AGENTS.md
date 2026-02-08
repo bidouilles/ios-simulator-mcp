@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-Core Python code lives in `src/ios_simulator_mcp/`:
+Core Python code lives in `src/mobile_pilot_mcp/`:
 - `server.py`: FastMCP server and tool registration.
 - `simulator.py`, `wda_client.py`, `ui_tree.py`: simulator control, WDA API, and UI parsing.
 - `dashboard.py` and `templates/dashboard.html`: local monitoring UI.

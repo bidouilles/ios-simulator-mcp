@@ -3,16 +3,16 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ios-simulator-mcp"
+name = "mobile-pilot-mcp"
 version = "1.0.0"
-description = "MCP server for iOS Simulator automation via WebDriverAgent. Control simulators from Claude, Cursor, and other AI assistants."
+description = "Mobile Pilot MCP - your AI co-pilot for mobile simulators. iOS today, Android coming soon."
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
 authors = [
     { name = "MobAI", email = "hello@mobai.run" }
 ]
-keywords = ["mcp", "ios", "simulator", "automation", "webdriveragent"]
+keywords = ["mcp", "mobile", "ios", "simulator", "automation", "webdriveragent", "flutter"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -39,10 +39,10 @@ dev = [
 ]
 
 [project.scripts]
-ios-simulator-mcp = "ios_simulator_mcp.server:main"
+mobile-pilot-mcp = "mobile_pilot_mcp.server:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ios_simulator_mcp"]
+packages = ["src/mobile_pilot_mcp"]
 
 [tool.ruff]
 line-length = 100

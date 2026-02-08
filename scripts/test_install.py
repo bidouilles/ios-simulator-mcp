@@ -2,19 +2,26 @@
 """Quick test to verify the installation works."""
 
 import asyncio
+from pathlib import Path
 import sys
+
+# Allow local source imports without requiring editable install.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
 
 async def main():
-    print("Testing iOS Simulator MCP Server installation...\n")
+    print("Testing Mobile Pilot MCP Server installation...\n")
 
     # Test imports
     print("1. Testing imports...")
     try:
-        from ios_simulator_mcp import __version__
-        from ios_simulator_mcp.server import mcp, server
-        from ios_simulator_mcp.simulator import SimulatorManager
-        from ios_simulator_mcp.wda_client import WDAClient
+        from mobile_pilot_mcp import __version__
+        from mobile_pilot_mcp.server import mcp, server
+        from mobile_pilot_mcp.simulator import SimulatorManager
+        from mobile_pilot_mcp.wda_client import WDAClient
         print(f"   ✓ All imports successful (version {__version__})")
         print(f"   ✓ MCP export compatibility: {server is mcp}")
     except ImportError as e:
