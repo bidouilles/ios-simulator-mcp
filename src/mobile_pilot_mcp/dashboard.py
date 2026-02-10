@@ -293,10 +293,7 @@ async def start_dashboard(
     await site.start()
 
     url = f"http://localhost:{port}"
-    logger.info(f"Dashboard started at {url}")
-    print(f"\n{'='*50}", flush=True)
-    print(f"  Dashboard: {url}", flush=True)
-    print(f"{'='*50}\n", flush=True)
+    logger.info("Dashboard started at %s", url)
 
     # Auto-open browser
     if auto_open:
